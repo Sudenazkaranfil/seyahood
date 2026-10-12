@@ -88,6 +88,8 @@ public class EntryService {
 
         if (entryData.getTextContent() != null) entry.setTextContent(entryData.getTextContent());
         if (entryData.getLocationName() != null) entry.setLocationName(entryData.getLocationName());
+        if (entryData.getLat() != null) entry.setLat(entryData.getLat());
+        if (entryData.getLng() != null) entry.setLng(entryData.getLng());
         if (entryData.getCanvasData() != null) entry.setCanvasData(entryData.getCanvasData());
         if (entryData.getMood() != null) entry.setMood(entryData.getMood());
 
