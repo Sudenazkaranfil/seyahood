@@ -18,6 +18,7 @@ public class FollowService {
 
     private final FollowRepository followRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     public boolean toggleFollow(String followerUsername, String followingUsername) {
         User follower = userRepository.findByUsername(followerUsername)
@@ -34,6 +35,7 @@ public class FollowService {
             follow.setFollower(follower);
             follow.setFollowing(following);
             followRepository.save(follow);
+            notificationService.notifyFollow(follower, following);
             return true;
         }
     }

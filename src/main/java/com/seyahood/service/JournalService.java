@@ -17,6 +17,7 @@ public class JournalService {
     private final EntryRepository entryRepository;
     private final CloudinaryService cloudinaryService;
     private final UserJournalSaveRepository userJournalSaveRepository;
+    private final NotificationService notificationService;
 
     public Journal create(String username, String title, String visibility) {
         User user = userRepository.findByUsername(username)
@@ -89,6 +90,7 @@ public class JournalService {
             userJournalSaveRepository.save(save);
             journal.setSaveCount(journal.getSaveCount() + 1);
             journalRepository.save(journal);
+            notificationService.notifyJournalSave(user, journal.getUser(), journal);
             return true;
         }
     }
