@@ -1,36 +1,40 @@
 package com.seyahood.service;
 
-import com.resend.Resend;
-import com.resend.core.exception.ResendException;
-import com.resend.services.emails.model.CreateEmailOptions;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class EmailService {
 
-    @Value("${resend.api.key}")
-    private String resendApiKey;
+    private final JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String fromAddress;
 
     public void sendVerificationCode(String to, String code) {
-        sendEmail(to, "MemoryLane - E-posta Doğrulama", buildVerificationHtml(code));
+        sendEmail(to, "Seyahood - E-posta Doğrulama", buildVerificationHtml(code));
     }
 
     public void sendResetCode(String to, String code) {
-        sendEmail(to, "MemoryLane - Şifre Sıfırlama", buildResetHtml(code));
+        sendEmail(to, "Seyahood - Şifre Sıfırlama", buildResetHtml(code));
     }
 
     private void sendEmail(String to, String subject, String html) {
         try {
-            Resend resend = new Resend(resendApiKey);
-            CreateEmailOptions params = CreateEmailOptions.builder()
-                    .from("MemoryLane <onboarding@resend.dev>")
-                    .to(to)
-                    .subject(subject)
-                    .html(html)
-                    .build();
-            resend.emails().send(params);
-        } catch (ResendException e) {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "UTF-8");
+            helper.setFrom(fromAddress, "Seyahood");
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(html, true);
+            mailSender.send(message);
+        } catch (MessagingException | java.io.UnsupportedEncodingException e) {
             throw new RuntimeException("EMAIL_SEND_FAILED");
         }
     }
@@ -53,12 +57,12 @@ public class EmailService {
                 "<tr><td align='center' style='padding: 40px 20px;'>" +
                 "<table width='480' cellpadding='0' cellspacing='0' style='background: white; border-radius: 24px; overflow: hidden;'>" +
                 "<tr><td style='background: #C4956A; padding: 32px; text-align: center;'>" +
-                "<div style='font-size: 28px; font-weight: 600; color: white;'>MemoryLane</div>" +
+                "<div style='font-size: 28px; font-weight: 600; color: white;'>Seyahood</div>" +
                 "<div style='font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 4px;'>senin yolculuğun, senin hikayen</div>" +
                 "</td></tr>" +
                 "<tr><td style='padding: 40px 32px; text-align: center;'>" +
                 "<div style='font-size: 22px; font-weight: 600; color: #2C2420; margin-bottom: 12px;'>E-postanı Doğrula</div>" +
-                "<div style='font-size: 15px; color: #9A8478; margin-bottom: 32px;'>MemoryLane'e hoş geldin! Hesabını doğrulamak için aşağıdaki kodu kullan.</div>" +
+                "<div style='font-size: 15px; color: #9A8478; margin-bottom: 32px;'>Seyahood'a hoş geldin! Hesabını doğrulamak için aşağıdaki kodu kullan.</div>" +
                 "<table cellpadding='0' cellspacing='0' style='margin: 0 auto;'><tr>" +
                 digitBoxes.toString() +
                 "</tr></table>" +
@@ -66,7 +70,7 @@ public class EmailService {
                 "</td></tr>" +
                 "<tr><td style='background: #FAFAF8; padding: 24px 32px; text-align: center; border-top: 1px solid #EDE8E3;'>" +
                 "<div style='font-size: 13px; color: #9A8478;'>Bu maili sen göndermemişsen görmezden gelebilirsin.</div>" +
-                "<div style='font-size: 13px; color: #C4956A; margin-top: 8px; font-weight: 500;'>MemoryLane Ekibi</div>" +
+                "<div style='font-size: 13px; color: #C4956A; margin-top: 8px; font-weight: 500;'>Seyahood Ekibi</div>" +
                 "</td></tr>" +
                 "</table></td></tr></table></body></html>";
     }
@@ -89,7 +93,7 @@ public class EmailService {
                 "<tr><td align='center' style='padding: 40px 20px;'>" +
                 "<table width='480' cellpadding='0' cellspacing='0' style='background: white; border-radius: 24px; overflow: hidden;'>" +
                 "<tr><td style='background: #C4956A; padding: 32px; text-align: center;'>" +
-                "<div style='font-size: 28px; font-weight: 600; color: white;'>MemoryLane</div>" +
+                "<div style='font-size: 28px; font-weight: 600; color: white;'>Seyahood</div>" +
                 "<div style='font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 4px;'>senin yolculuğun, senin hikayen</div>" +
                 "</td></tr>" +
                 "<tr><td style='padding: 40px 32px; text-align: center;'>" +
@@ -102,7 +106,7 @@ public class EmailService {
                 "</td></tr>" +
                 "<tr><td style='background: #FAFAF8; padding: 24px 32px; text-align: center; border-top: 1px solid #EDE8E3;'>" +
                 "<div style='font-size: 13px; color: #9A8478;'>Bu maili sen göndermemişsen görmezden gelebilirsin.</div>" +
-                "<div style='font-size: 13px; color: #C4956A; margin-top: 8px; font-weight: 500;'>MemoryLane Ekibi</div>" +
+                "<div style='font-size: 13px; color: #C4956A; margin-top: 8px; font-weight: 500;'>Seyahood Ekibi</div>" +
                 "</td></tr>" +
                 "</table></td></tr></table></body></html>";
     }
