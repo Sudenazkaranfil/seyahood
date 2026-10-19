@@ -31,7 +31,7 @@ public class EmailService {
                     .build();
             resend.emails().send(params);
         } catch (ResendException e) {
-            throw new RuntimeException("Mail gönderilemedi: " + e.getMessage());
+            throw new RuntimeException("EMAIL_SEND_FAILED");
         }
     }
 

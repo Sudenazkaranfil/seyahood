@@ -54,21 +54,21 @@ public class NotificationService {
 
     public List<Notification> getForUser(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         return notificationRepository.findByRecipientOrderByCreatedAtDesc(user);
     }
 
     public long getUnreadCount(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         return notificationRepository.countByRecipientAndReadFalse(user);
     }
 
     public void markRead(Long notificationId, String username) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Bildirim bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("NOTIFICATION_NOT_FOUND"));
         if (!notification.getRecipient().getUsername().equals(username)) {
-            throw new RuntimeException("Bu bildirime erişim yetkiniz yok");
+            throw new RuntimeException("NOTIFICATION_ACCESS_DENIED");
         }
         notification.setRead(true);
         notificationRepository.save(notification);
@@ -77,13 +77,13 @@ public class NotificationService {
     @Transactional
     public void markAllRead(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         notificationRepository.markAllRead(user);
     }
 
     public void registerDeviceToken(String username, String token, String platform) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
 
         deviceTokenRepository.findByToken(token).ifPresentOrElse(existing -> {
             existing.setUser(user);

@@ -23,10 +23,10 @@ public class EntryService {
 
     public Entry create(Long journalId, String username, Entry entryData) {
         Journal journal = journalRepository.findById(journalId)
-                .orElseThrow(() -> new RuntimeException("Ajanda bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("JOURNAL_NOT_FOUND"));
 
         if (!journal.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Bu ajandaya erişim yetkiniz yok");
+            throw new RuntimeException("JOURNAL_ACCESS_DENIED");
         }
 
         // Sayfa limit kontrolü
@@ -42,14 +42,14 @@ public class EntryService {
 
     public List<Entry> getEntries(Long journalId, String username) {
         Journal journal = journalRepository.findById(journalId)
-                .orElseThrow(() -> new RuntimeException("Ajanda bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("JOURNAL_NOT_FOUND"));
 
         if (journal.getVisibility() == Journal.Visibility.PUBLIC) {
             return entryRepository.findByJournalIdOrderByCreatedAtAsc(journalId);
         }
 
         if (!journal.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Bu ajandaya erişim yetkiniz yok");
+            throw new RuntimeException("JOURNAL_ACCESS_DENIED");
         }
 
         return entryRepository.findByJournalIdOrderByCreatedAtAsc(journalId);
@@ -57,10 +57,10 @@ public class EntryService {
 
     public void delete(Long entryId, String username) {
         Entry entry = entryRepository.findById(entryId)
-                .orElseThrow(() -> new RuntimeException("Giriş bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("ENTRY_NOT_FOUND"));
 
         if (!entry.getJournal().getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Bu girişi silme yetkiniz yok");
+            throw new RuntimeException("ENTRY_DELETE_DENIED");
         }
 
         entryRepository.delete(entry);
@@ -68,10 +68,10 @@ public class EntryService {
 
     public Entry addPhotoToEntry(Long entryId, String username, String imageUrl) {
         Entry entry = entryRepository.findById(entryId)
-                .orElseThrow(() -> new RuntimeException("Giriş bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("ENTRY_NOT_FOUND"));
 
         if(!entry.getJournal().getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Bu girişe erişim yetkiniz yok");
+            throw new RuntimeException("ENTRY_ACCESS_DENIED");
         }
 
         entry.getPhotoUrls().add(imageUrl);
@@ -80,10 +80,10 @@ public class EntryService {
 
     public Entry update(Long journalId, Long entryId, String username, Entry entryData) {
         Entry entry = entryRepository.findById(entryId)
-                .orElseThrow(() -> new RuntimeException("Giriş bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("ENTRY_NOT_FOUND"));
 
         if (!entry.getJournal().getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Bu girişe erişim yetkiniz yok");
+            throw new RuntimeException("ENTRY_ACCESS_DENIED");
         }
 
         if (entryData.getTextContent() != null) entry.setTextContent(entryData.getTextContent());

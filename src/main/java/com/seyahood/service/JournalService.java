@@ -21,7 +21,7 @@ public class JournalService {
 
     public Journal create(String username, String title, String visibility) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
 
         // Ajanda limit kontrolü
         long journalCount = journalRepository.countByUser(user);
@@ -40,7 +40,7 @@ public class JournalService {
 
     public List<Journal> getMyJournals(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         return journalRepository.findByUserId(user.getId());
     }
 
@@ -66,16 +66,16 @@ public class JournalService {
 
     public List<Journal> getSavedJournals(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         List<UserJournalSave> saves = userJournalSaveRepository.findByUser(user);
         return saves.stream().map(UserJournalSave::getJournal).toList();
     }
 
     public boolean toggleSave(String username, Long journalId) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         Journal journal = journalRepository.findById(journalId)
-                .orElseThrow(() -> new RuntimeException("Ajanda bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("JOURNAL_NOT_FOUND"));
 
         if (userJournalSaveRepository.existsByUserAndJournal(user, journal)) {
             userJournalSaveRepository.findByUserAndJournal(user, journal)
@@ -97,25 +97,25 @@ public class JournalService {
 
     public boolean isSaved(String username, Long journalId) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         Journal journal = journalRepository.findById(journalId)
-                .orElseThrow(() -> new RuntimeException("Ajanda bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("JOURNAL_NOT_FOUND"));
         return userJournalSaveRepository.existsByUserAndJournal(user, journal);
     }
 
     public Journal incrementView(Long journalId) {
         Journal journal = journalRepository.findById(journalId)
-                .orElseThrow(() -> new RuntimeException("Ajanda bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("JOURNAL_NOT_FOUND"));
         journal.setViewCount(journal.getViewCount() + 1);
         return journalRepository.save(journal);
     }
 
     public Journal uploadCover(Long id, String username, MultipartFile file) throws IOException {
         Journal journal = journalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ajanda bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("JOURNAL_NOT_FOUND"));
 
         if (!journal.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Bu ajandayı düzenleme yetkiniz yok");
+            throw new RuntimeException("JOURNAL_EDIT_DENIED");
         }
 
         String imageUrl = cloudinaryService.upload(file);
@@ -126,10 +126,10 @@ public class JournalService {
     @Transactional
     public void delete(Long journalId, String username) {
         Journal journal = journalRepository.findById(journalId)
-                .orElseThrow(() -> new RuntimeException("Ajanda bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("JOURNAL_NOT_FOUND"));
 
         if (!journal.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Bu ajandayı silme yetkiniz yok");
+            throw new RuntimeException("JOURNAL_DELETE_DENIED");
         }
 
         entryRepository.deleteByJournalId(journalId);
@@ -138,10 +138,10 @@ public class JournalService {
 
     public Journal update(Long id, String username, Journal journalData) {
         Journal journal = journalRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ajanda bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("JOURNAL_NOT_FOUND"));
 
         if (!journal.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Bu ajandayı düzenleme yetkiniz yok");
+            throw new RuntimeException("JOURNAL_EDIT_DENIED");
         }
 
         if (journalData.getTitle() != null) journal.setTitle(journalData.getTitle());

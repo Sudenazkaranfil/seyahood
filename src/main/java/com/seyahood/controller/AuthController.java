@@ -109,11 +109,11 @@ public class AuthController {
         User user = userService.findByEmail(email);
 
         if (user.getVerificationCode() == null || !user.getVerificationCode().equals(code)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Geçersiz kod"));
+            return ResponseEntity.badRequest().body(Map.of("error", "INVALID_VERIFICATION_CODE"));
         }
 
         if (user.getVerificationCodeExpiry().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Kodun süresi dolmuş"));
+            return ResponseEntity.badRequest().body(Map.of("error", "VERIFICATION_CODE_EXPIRED"));
         }
 
         user.setVerified(true);
@@ -130,7 +130,7 @@ public class AuthController {
         User user = userService.findByEmail(email);
 
         if (user.getVerified()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Hesap zaten doğrulanmış"));
+            return ResponseEntity.badRequest().body(Map.of("error", "ACCOUNT_ALREADY_VERIFIED"));
         }
 
         String code = String.format("%06d", new java.util.Random().nextInt(999999));
@@ -150,11 +150,11 @@ public class AuthController {
         User user = userService.findByEmail(email);
 
         if (user.getResetPasswordCode() == null || !user.getResetPasswordCode().equals(code)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Geçersiz kod"));
+            return ResponseEntity.badRequest().body(Map.of("error", "INVALID_RESET_CODE"));
         }
 
         if (user.getResetPasswordCodeExpiry().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Kodun süresi dolmuş"));
+            return ResponseEntity.badRequest().body(Map.of("error", "RESET_CODE_EXPIRED"));
         }
 
         return ResponseEntity.ok(Map.of("message", "Kod doğrulandı"));

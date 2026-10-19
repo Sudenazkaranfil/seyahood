@@ -22,9 +22,9 @@ public class FollowService {
 
     public boolean toggleFollow(String followerUsername, String followingUsername) {
         User follower = userRepository.findByUsername(followerUsername)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         User following = userRepository.findByUsername(followingUsername)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
 
         if (followRepository.existsByFollowerAndFollowing(follower, following)) {
             followRepository.findByFollowerAndFollowing(follower, following)
@@ -42,26 +42,26 @@ public class FollowService {
 
     public boolean isFollowing(String followerUsername, String followingUsername) {
         User follower = userRepository.findByUsername(followerUsername)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         User following = userRepository.findByUsername(followingUsername)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         return followRepository.existsByFollowerAndFollowing(follower, following);
     }
 
     public long getFollowerCount(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         return followRepository.countByFollowing(user);
     }
 
     public long getFollowingCount(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         return followRepository.countByFollower(user);
     }
     public List<Map<String, Object>> getFollowers(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         return followRepository.findByFollowing(user).stream()
                 .map(follow -> {
                     Map<String, Object> map = new java.util.HashMap<>();
@@ -76,7 +76,7 @@ public class FollowService {
 
     public List<Map<String, Object>> getFollowing(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         return followRepository.findByFollower(user).stream()
                 .map(follow -> {
                     Map<String, Object> map = new java.util.HashMap<>();
