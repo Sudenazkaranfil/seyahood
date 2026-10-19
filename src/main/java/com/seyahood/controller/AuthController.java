@@ -2,6 +2,7 @@ package com.seyahood.controller;
 
 import com.seyahood.dto.LoginRequest;
 import com.seyahood.dto.RegisterRequest;
+import com.seyahood.exception.AccountNotVerifiedException;
 import com.seyahood.model.User;
 import com.seyahood.service.EmailService;
 import com.seyahood.service.UserService;
@@ -37,17 +38,24 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        String token = userService.login(request.getEmail(), request.getPassword());
-        User user;
-        if (request.getEmail().contains("@")) {
-            user = userService.findByEmail(request.getEmail());
-        } else {
-            user = userService.getProfile(request.getEmail());
+        try {
+            String token = userService.login(request.getEmail(), request.getPassword());
+            User user;
+            if (request.getEmail().contains("@")) {
+                user = userService.findByEmail(request.getEmail());
+            } else {
+                user = userService.getProfile(request.getEmail());
+            }
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "username", user.getUsername()
+            ));
+        } catch (AccountNotVerifiedException e) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "ACCOUNT_NOT_VERIFIED",
+                    "email", e.getEmail()
+            ));
         }
-        return ResponseEntity.ok(Map.of(
-                "token", token,
-                "username", user.getUsername()
-        ));
     }
 
     @GetMapping("/profile")
@@ -109,11 +117,11 @@ public class AuthController {
         User user = userService.findByEmail(email);
 
         if (user.getVerificationCode() == null || !user.getVerificationCode().equals(code)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Geçersiz kod"));
+            return ResponseEntity.badRequest().body(Map.of("error", "INVALID_VERIFICATION_CODE"));
         }
 
         if (user.getVerificationCodeExpiry().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Kodun süresi dolmuş"));
+            return ResponseEntity.badRequest().body(Map.of("error", "VERIFICATION_CODE_EXPIRED"));
         }
 
         user.setVerified(true);
@@ -130,7 +138,7 @@ public class AuthController {
         User user = userService.findByEmail(email);
 
         if (user.getVerified()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Hesap zaten doğrulanmış"));
+            return ResponseEntity.badRequest().body(Map.of("error", "ACCOUNT_ALREADY_VERIFIED"));
         }
 
         String code = String.format("%06d", new java.util.Random().nextInt(999999));
@@ -150,11 +158,11 @@ public class AuthController {
         User user = userService.findByEmail(email);
 
         if (user.getResetPasswordCode() == null || !user.getResetPasswordCode().equals(code)) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Geçersiz kod"));
+            return ResponseEntity.badRequest().body(Map.of("error", "INVALID_RESET_CODE"));
         }
 
         if (user.getResetPasswordCodeExpiry().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Kodun süresi dolmuş"));
+            return ResponseEntity.badRequest().body(Map.of("error", "RESET_CODE_EXPIRED"));
         }
 
         return ResponseEntity.ok(Map.of("message", "Kod doğrulandı"));

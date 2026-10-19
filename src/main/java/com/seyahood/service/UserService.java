@@ -1,5 +1,6 @@
 package com.seyahood.service;
 
+import com.seyahood.exception.AccountNotVerifiedException;
 import com.seyahood.model.User;
 import com.seyahood.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,37 +25,45 @@ public class UserService {
 
     public User register(String username, String email, String password) {
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Bu email zaten kullanılıyor");
+            throw new RuntimeException("EMAIL_ALREADY_IN_USE");
         }
         if (userRepository.existsByUsername(username)) {
-            throw new RuntimeException("Bu username zaten kullanılıyor");
+            throw new RuntimeException("USERNAME_ALREADY_IN_USE");
         }
         User user = new User();
         user.setUsername(username);
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
-        user.setVerified(true);
-        return userRepository.save(user);
+        user.setVerified(false);
+        String code = String.format("%06d", new Random().nextInt(999999));
+        user.setVerificationCode(code);
+        user.setVerificationCodeExpiry(LocalDateTime.now().plusMinutes(10));
+        User saved = userRepository.save(user);
+        emailService.sendVerificationCode(email, code);
+        return saved;
     }
 
     public String login(String emailOrUsername, String password) {
         User user;
         if (emailOrUsername.contains("@")) {
             user = userRepository.findByEmail(emailOrUsername)
-                    .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                    .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         } else {
             user = userRepository.findByUsername(emailOrUsername)
-                    .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                    .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         }
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            throw new RuntimeException("Şifre yanlış");
+            throw new RuntimeException("INVALID_PASSWORD");
+        }
+        if (!user.getVerified()) {
+            throw new AccountNotVerifiedException(user.getEmail());
         }
         return jwtService.generateToken(user.getUsername());
     }
 
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
     }
 
     public User updateProfile(String username, String firstName, String lastName,
@@ -74,12 +83,12 @@ public class UserService {
 
     public User getProfile(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
     }
 
     public void sendResetCode(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Bu e-posta ile kayıtlı hesap bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("EMAIL_NOT_REGISTERED"));
         String code = String.format("%06d", new Random().nextInt(999999));
         user.setResetPasswordCode(code);
         user.setResetPasswordCodeExpiry(LocalDateTime.now().plusMinutes(10));
@@ -89,12 +98,12 @@ public class UserService {
 
     public void resetPassword(String email, String code, String newPassword) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
         if (user.getResetPasswordCode() == null || !user.getResetPasswordCode().equals(code)) {
-            throw new RuntimeException("Geçersiz kod");
+            throw new RuntimeException("INVALID_RESET_CODE");
         }
         if (user.getResetPasswordCodeExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Kodun süresi dolmuş");
+            throw new RuntimeException("RESET_CODE_EXPIRED");
         }
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.setResetPasswordCode(null);
@@ -124,6 +133,6 @@ public class UserService {
 
     public User findByRevenueCatCustomerId(String customerId) {
         return userRepository.findByRevenueCatCustomerId(customerId)
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
     }
 }
