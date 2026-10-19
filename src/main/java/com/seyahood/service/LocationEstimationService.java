@@ -24,7 +24,7 @@ public class LocationEstimationService {
             "olamazsan genel bir tahmin yap (örnek: 'Sahil kenti' veya 'Dağlık " +
             "bölge'). Başka açıklama ekleme, sadece yer adını yaz.";
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Value("${anthropic.api.key:}")

@@ -23,7 +23,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GoogleVisionService {
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     @Value("${google.vision.api.key:}")
