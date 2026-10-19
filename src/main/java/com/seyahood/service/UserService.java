@@ -1,5 +1,6 @@
 package com.seyahood.service;
 
+import com.seyahood.exception.AccountNotVerifiedException;
 import com.seyahood.model.User;
 import com.seyahood.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +34,13 @@ public class UserService {
         user.setUsername(username);
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
-        user.setVerified(true);
-        return userRepository.save(user);
+        user.setVerified(false);
+        String code = String.format("%06d", new Random().nextInt(999999));
+        user.setVerificationCode(code);
+        user.setVerificationCodeExpiry(LocalDateTime.now().plusMinutes(10));
+        User saved = userRepository.save(user);
+        emailService.sendVerificationCode(email, code);
+        return saved;
     }
 
     public String login(String emailOrUsername, String password) {
@@ -48,6 +54,9 @@ public class UserService {
         }
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new RuntimeException("INVALID_PASSWORD");
+        }
+        if (!user.getVerified()) {
+            throw new AccountNotVerifiedException(user.getEmail());
         }
         return jwtService.generateToken(user.getUsername());
     }

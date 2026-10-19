@@ -2,6 +2,7 @@ package com.seyahood.controller;
 
 import com.seyahood.dto.LoginRequest;
 import com.seyahood.dto.RegisterRequest;
+import com.seyahood.exception.AccountNotVerifiedException;
 import com.seyahood.model.User;
 import com.seyahood.service.EmailService;
 import com.seyahood.service.UserService;
@@ -37,17 +38,24 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        String token = userService.login(request.getEmail(), request.getPassword());
-        User user;
-        if (request.getEmail().contains("@")) {
-            user = userService.findByEmail(request.getEmail());
-        } else {
-            user = userService.getProfile(request.getEmail());
+        try {
+            String token = userService.login(request.getEmail(), request.getPassword());
+            User user;
+            if (request.getEmail().contains("@")) {
+                user = userService.findByEmail(request.getEmail());
+            } else {
+                user = userService.getProfile(request.getEmail());
+            }
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "username", user.getUsername()
+            ));
+        } catch (AccountNotVerifiedException e) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "ACCOUNT_NOT_VERIFIED",
+                    "email", e.getEmail()
+            ));
         }
-        return ResponseEntity.ok(Map.of(
-                "token", token,
-                "username", user.getUsername()
-        ));
     }
 
     @GetMapping("/profile")
