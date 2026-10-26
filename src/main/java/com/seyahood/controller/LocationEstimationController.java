@@ -1,6 +1,7 @@
 package com.seyahood.controller;
 
 import com.seyahood.model.User;
+import com.seyahood.service.EntryService;
 import com.seyahood.service.GoogleVisionService;
 import com.seyahood.service.LocationEstimationService;
 import com.seyahood.service.UserService;
@@ -20,12 +21,14 @@ public class LocationEstimationController {
 
     private final GoogleVisionService googleVisionService;
     private final LocationEstimationService locationEstimationService;
+    private final EntryService entryService;
     private final UserService userService;
 
     @PostMapping("/estimate-location")
     public ResponseEntity<?> estimateLocation(
             @AuthenticationPrincipal String username,
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "journalId", required = false) Long journalId) {
         User user = userService.getProfile(username);
         if (!user.isPro()) {
             return ResponseEntity.status(403).body(Map.of("error", "PRO_REQUIRED"));
@@ -47,10 +50,22 @@ public class LocationEstimationController {
                 result.put("lat", landmark.lat());
                 result.put("lng", landmark.lng());
             } else {
-                // Son çare: ücretli, genel amaçlı Claude tahmini.
+                // Son çare: ücretli, genel amaçlı Claude tahmini — aynı
+                // ajandanın diğer sayfalarındaki bilinen konumlar
+                // destekleyici bağlam olarak veriliyor (çapraz kontrol).
+                String journalContext = null;
+                if (journalId != null) {
+                    try {
+                        journalContext = entryService.buildLocationContext(journalId, username);
+                    } catch (Exception ignored) {
+                        // Bağlam alınamazsa tahmin yine de denenir, context'siz.
+                    }
+                }
                 String aiGuess = locationEstimationService.estimateLocation(
-                        bytes, file.getContentType());
-                result.put("locationName", aiGuess);
+                        bytes, file.getContentType(), journalContext);
+                boolean identified = aiGuess != null && !aiGuess.isBlank()
+                        && !aiGuess.trim().equalsIgnoreCase("UNKNOWN");
+                result.put("locationName", identified ? aiGuess.trim() : null);
                 result.put("lat", null);
                 result.put("lng", null);
             }

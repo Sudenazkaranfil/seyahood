@@ -18,11 +18,6 @@ import java.util.Map;
 public class LocationEstimationService {
 
     private static final String ANTHROPIC_MODEL = "claude-sonnet-5";
-    private static final String PROMPT =
-            "Bu fotoğraftaki yeri tahmin et. Sadece yer adını kısa ve net şekilde " +
-            "yaz (örnek: 'Kapadokya, Türkiye' veya 'Eyfel Kulesi, Paris'). Emin " +
-            "olamazsan genel bir tahmin yap (örnek: 'Sahil kenti' veya 'Dağlık " +
-            "bölge'). Başka açıklama ekleme, sadece yer adını yaz.";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -30,8 +25,33 @@ public class LocationEstimationService {
     @Value("${anthropic.api.key:}")
     private String anthropicApiKey;
 
+    /**
+     * [journalContext] varsa (bkz. EntryService.buildLocationContext),
+     * modele yalnızca fotoğrafla tutarlıysa kullanılacak destekleyici bir
+     * ipucu olarak veriliyor — fotoğrafla çelişirse göz ardı etmesi
+     * isteniyor, bağlamı olduğu gibi kabul etmesi değil.
+     */
+    private String buildPrompt(String journalContext) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Bu fotoğraftaki yeri tahmin et. Sadece yer adını kısa ve net şekilde yaz ")
+          .append("(örnek: 'Kapadokya, Türkiye' veya 'Eyfel Kulesi, Paris').\n\n");
+        if (journalContext != null && !journalContext.isBlank()) {
+            sb.append(journalContext)
+              .append(" Bu bilgiyi yalnızca fotoğraftaki görsel kanıtla tutarlıysa kullan; ")
+              .append("fotoğraf bu bağlamla çelişiyorsa veya hiç ilgisi yoksa göz ardı et.\n\n");
+        }
+        sb.append("Fotoğrafta konumu belirleyecek hiçbir görsel ipucu yoksa (örneğin sadece bir ")
+          .append("hayvan, yemek, iç mekan objesi gibi konumdan bağımsız bir şey varsa ve yukarıdaki ")
+          .append("bağlam da yardımcı olmuyorsa), sadece 'UNKNOWN' yaz. Aksi halde, emin olamasan ")
+          .append("bile mimari, bitki örtüsü, tabela dili gibi ipuçlarından genel bir tahmin yap ")
+          .append("(örnek: 'Akdeniz kıyısı' veya 'Güneydoğu Asya'). Başka açıklama ekleme, sadece ")
+          .append("yer adını veya UNKNOWN yaz.");
+        return sb.toString();
+    }
+
     @SuppressWarnings("unchecked")
-    public String estimateLocation(byte[] imageBytes, String contentType) throws Exception {
+    public String estimateLocation(byte[] imageBytes, String contentType, String journalContext)
+            throws Exception {
         if (anthropicApiKey == null || anthropicApiKey.isBlank()) {
             throw new IllegalStateException("Anthropic API key not configured");
         }
@@ -41,7 +61,7 @@ public class LocationEstimationService {
 
         Map<String, Object> requestBody = Map.of(
                 "model", ANTHROPIC_MODEL,
-                "max_tokens", 60,
+                "max_tokens", 100,
                 "messages", List.of(Map.of(
                         "role", "user",
                         "content", List.of(
@@ -49,7 +69,7 @@ public class LocationEstimationService {
                                         "type", "base64",
                                         "media_type", mediaType,
                                         "data", base64Image)),
-                                Map.of("type", "text", "text", PROMPT)
+                                Map.of("type", "text", "text", buildPrompt(journalContext))
                         )
                 ))
         );

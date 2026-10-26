@@ -96,6 +96,27 @@ public class EntryService {
         return entryRepository.save(entry);
     }
 
+    /**
+     * AI konum tahmininin çapraz kontrol için kullanacağı bağlam: bu
+     * ajandanın başlığı ve daha önce konumu belirlenmiş sayfalarının
+     * özeti. Fotoğrafın kendisiyle çelişirse tahmin servisi bunu göz
+     * ardı edebilir — bağlam sadece destekleyici bir ipucu.
+     */
+    public String buildLocationContext(Long journalId, String username) {
+        Journal journal = journalRepository.findById(journalId)
+                .orElseThrow(() -> new RuntimeException("JOURNAL_NOT_FOUND"));
+        if (!journal.getUser().getUsername().equals(username)) {
+            throw new RuntimeException("JOURNAL_ACCESS_DENIED");
+        }
+        List<String> known = entryRepository.findByJournalIdOrderByCreatedAtAsc(journalId).stream()
+                .filter(e -> e.getLocationName() != null && !e.getLocationName().isBlank())
+                .map(e -> (e.getDate() != null ? e.getDate() + " - " : "") + e.getLocationName())
+                .collect(Collectors.toList());
+        if (known.isEmpty()) return null;
+        return "Ajanda başlığı: \"" + journal.getTitle() + "\". Bu ajandadaki diğer sayfalarda "
+                + "bilinen konumlar: " + String.join(", ", known) + ".";
+    }
+
     public List<Map<String, Object>> getPublicLocations() {
         return entryRepository.findPublicLocations().stream()
                 .map(entry -> {
