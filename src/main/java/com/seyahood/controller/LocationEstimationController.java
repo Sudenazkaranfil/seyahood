@@ -49,7 +49,7 @@ public class LocationEstimationController {
                 result.put("locationName", landmark.name());
                 result.put("lat", landmark.lat());
                 result.put("lng", landmark.lng());
-            } else {
+            } else if (locationEstimationService.isConfigured()) {
                 // Son çare: ücretli, genel amaçlı Claude tahmini — aynı
                 // ajandanın diğer sayfalarındaki bilinen konumlar
                 // destekleyici bağlam olarak veriliyor (çapraz kontrol).
@@ -66,6 +66,12 @@ public class LocationEstimationController {
                 boolean identified = aiGuess != null && !aiGuess.isBlank()
                         && !aiGuess.trim().equalsIgnoreCase("UNKNOWN");
                 result.put("locationName", identified ? aiGuess.trim() : null);
+                result.put("lat", null);
+                result.put("lng", null);
+            } else {
+                // Claude katmanı yapılandırılmamış (ANTHROPIC_API_KEY yok) —
+                // bu bir hata değil, sadece ücretsiz katmanlar yetersiz kaldı.
+                result.put("locationName", null);
                 result.put("lat", null);
                 result.put("lng", null);
             }

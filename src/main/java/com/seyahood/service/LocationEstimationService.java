@@ -49,10 +49,15 @@ public class LocationEstimationService {
         return sb.toString();
     }
 
+    /** ANTHROPIC_API_KEY ayarlanmadıysa bu katman hiç çağrılmamalı. */
+    public boolean isConfigured() {
+        return anthropicApiKey != null && !anthropicApiKey.isBlank();
+    }
+
     @SuppressWarnings("unchecked")
     public String estimateLocation(byte[] imageBytes, String contentType, String journalContext)
             throws Exception {
-        if (anthropicApiKey == null || anthropicApiKey.isBlank()) {
+        if (!isConfigured()) {
             throw new IllegalStateException("Anthropic API key not configured");
         }
         String mediaType = (contentType != null && contentType.startsWith("image/"))
